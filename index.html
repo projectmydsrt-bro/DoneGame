@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DSRT Playzone</title>
+  <meta name="description" content="Portal game resmi DSRT – mainkan game HTML5, Unity, dan AI-based secara gratis!">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body { background: #0e0e10; color: #fff; font-family: 'Inter', sans-serif; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
+    .game-card { background: #1a1a1e; border-radius: 1rem; overflow: hidden; transition: transform .2s; }
+    .game-card:hover { transform: scale(1.05); }
+    .search-bar { margin-bottom: 1.5rem; }
+    .filter-btn { padding: 0.4rem 1rem; border-radius: 0.5rem; border: 1px solid #4f46e5; margin: 0.2rem; cursor: pointer; }
+    .filter-btn.active { background: #4f46e5; }
+  </style>
+</head>
+<body>
+  <header class="text-center py-8">
+    <h1 class="text-4xl font-bold mb-2">🎮 DSRT Playzone</h1>
+    <p class="text-gray-400">Mainkan game HTML5 & Unity langsung di browser kamu.</p>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-6">
+    <div class="search-bar text-center">
+      <input id="searchInput" class="px-4 py-2 rounded-md text-black w-1/2" type="text" placeholder="Cari game...">
+    </div>
+
+    <div id="filterButtons" class="text-center mb-6"></div>
+
+    <div id="gameGrid" class="grid"></div>
+  </main>
+
+  <script>
+    const config = ${JSON.stringify({
+      repo: "https://projectmydsrt-bro.github.io/DoneGame/game",
+      categories: ["arcade","puzzle","racing","shooter","adventure","simulation","visualnovel","platformer"]
+    })};
+
+    const gameGrid = document.getElementById("gameGrid");
+    const searchInput = document.getElementById("searchInput");
+    const filterButtons = document.getElementById("filterButtons");
+
+    let allGames = [];
+    let activeCategory = null;
+
+    async function loadMetadata() {
+      for (const cat of config.categories) {
+        try {
+          const res = await fetch(`${config.repo}/${cat}/metadata.json`);
+          if (!res.ok) continue;
+          const list = await res.json();
+          allGames.push(list);
+        } catch {}
+      }
+      renderGames(allGames);
+    }
+
+    function renderGames(list) {
+      gameGrid.innerHTML = list.map(g => `
+        <div class="game-card">
+          <img src="${g.thumbnail}" alt="${g.title}" onerror="this.src='https://via.placeholder.com/300x180?text=${g.title}'"/>
+          <div class="p-4 text-center">
+            <h3 class="text-lg font-semibold">${g.title}</h3>
+            <p class="text-gray-400 text-sm mb-2">${g.category.toUpperCase()} • ⭐ ${g.rating}</p>
+            <a href="${g.play_url}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white py-1 px-3 rounded-md">Play</a>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    searchInput.addEventListener("input", e => {
+      const q = e.target.value.toLowerCase();
+      const filtered = allGames.filter(g => g.title.toLowerCase().includes(q));
+      renderGames(filtered);
+    });
+
+    function setupFilters() {
+      config.categories.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.textContent = cat;
+        btn.className = "filter-btn";
+        btn.onclick = () => {
+          activeCategory = activeCategory === cat ? null : cat;
+          document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+          if (activeCategory) btn.classList.add("active");
+          const filtered = activeCategory ? allGames.filter(g => g.category === activeCategory) : allGames;
+          renderGames(filtered);
+        };
+        filterButtons.appendChild(btn);
+      });
+    }
+
+    setupFilters();
+    loadMetadata();
+  </script>
+
+  <footer class="text-center text-gray-600 py-8 text-sm">
+    © 2025 DSRT Artweb. All rights reserved.
+  </footer>
+</body>
+</html>
